@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="A clean, private habit tracker. Build streaks, track progress, and stay consistent." />
+<title>Cadence · Habit Tracker</title>
+<link rel="preconnect" href="https://api.fontshare.com" />
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&f[]=general-sans@500,600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23126e64'/%3E%3Cpath d='M9 17l4 4 10-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="logo" width="28" height="28" viewBox="0 0 32 32" aria-label="Cadence logo">
+      <rect width="32" height="32" rx="8" fill="currentColor" />
+      <path d="M9 17l4 4 10-10" stroke="var(--color-bg)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="brand-text">
+      <span class="brand-name">Cadence</span>
+      <span class="brand-sub" id="todayLabel">—</span>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn-ghost" id="exportBtn" title="Export data" aria-label="Export data">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    </button>
+    <button class="btn-ghost" data-theme-toggle aria-label="Toggle theme"></button>
+    <button class="btn-primary" id="newHabitBtn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New habit
+    </button>
+  </div>
+</header>
+
+<main class="shell">
+
+  <!-- Stats summary -->
+  <section class="stats" aria-label="Summary stats">
+    <div class="stat-card">
+      <span class="stat-label">Today</span>
+      <div class="stat-value-row">
+        <span class="stat-value" id="statToday">0/0</span>
+        <span class="stat-sub" id="statTodayPct">—</span>
+      </div>
+      <div class="progress"><div class="progress-fill" id="progressToday" style="width:0%"></div></div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Active streaks</span>
+      <div class="stat-value-row">
+        <span class="stat-value" id="statStreaks">0</span>
+        <span class="stat-sub">habits on a roll</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Longest streak</span>
+      <div class="stat-value-row">
+        <span class="stat-value" id="statLongest">0</span>
+        <span class="stat-sub">days</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Last 30 days</span>
+      <div class="stat-value-row">
+        <span class="stat-value" id="stat30">0%</span>
+        <span class="stat-sub">completion</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Today -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2 class="panel-title">Today</h2>
+      <p class="panel-sub">Tap to mark done. Streaks update instantly.</p>
+    </div>
+    <div id="habitList" class="habit-list" role="list"></div>
+    <div id="emptyState" class="empty hidden">
+      <div class="empty-art" aria-hidden="true">
+        <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M8 12.5l2.5 2.5L16 9.5"/>
+        </svg>
+      </div>
+      <h3>Start with one habit</h3>
+      <p>Small, daily, repeatable. Click “New habit” above to add your first one.</p>
+    </div>
+  </section>
+
+  <!-- Weekly chart -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2 class="panel-title">Last 7 days</h2>
+      <p class="panel-sub">Completion rate across all habits.</p>
+    </div>
+    <div class="week-chart" id="weekChart" aria-label="Weekly completion chart"></div>
+  </section>
+
+  <!-- Heatmap -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2 class="panel-title">Consistency · last 12 weeks</h2>
+      <p class="panel-sub">Each square is one day. Darker means more habits completed.</p>
+    </div>
+    <div class="heatmap-wrap">
+      <div class="heatmap" id="heatmap" aria-hidden="true"></div>
+      <div class="heatmap-legend">
+        <span>Less</span>
+        <span class="sq l0"></span>
+        <span class="sq l1"></span>
+        <span class="sq l2"></span>
+        <span class="sq l3"></span>
+        <span class="sq l4"></span>
+        <span>More</span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- New / edit habit modal -->
+<div class="modal hidden" id="habitModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel">
+    <div class="modal-head">
+      <h3 id="modalTitle">New habit</h3>
+      <button class="btn-ghost" data-close aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <form id="habitForm" class="modal-body">
+      <label class="field">
+        <span class="field-label">Name</span>
+        <input type="text" id="habitName" required maxlength="60" placeholder="e.g. Strength training" />
+      </label>
+
+      <div class="field">
+        <span class="field-label">Color</span>
+        <div class="color-row" id="colorRow"></div>
+      </div>
+
+      <div class="field">
+        <span class="field-label">Schedule</span>
+        <div class="day-row" id="dayRow" role="group" aria-label="Days of week">
+          <button type="button" data-day="1">M</button>
+          <button type="button" data-day="2">T</button>
+          <button type="button" data-day="3">W</button>
+          <button type="button" data-day="4">T</button>
+          <button type="button" data-day="5">F</button>
+          <button type="button" data-day="6">S</button>
+          <button type="button" data-day="0">S</button>
+        </div>
+        <div class="preset-row">
+          <button type="button" class="chip" data-preset="daily">Every day</button>
+          <button type="button" class="chip" data-preset="weekdays">Weekdays</button>
+          <button type="button" class="chip" data-preset="weekends">Weekends</button>
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost btn-danger hidden" id="deleteBtn">Delete</button>
+        <div class="spacer"></div>
+        <button type="button" class="btn-ghost" data-close>Cancel</button>
+        <button type="submit" class="btn-primary" id="saveBtn">Save habit</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="app.js"></script>
+<script data-pplx-inline-edit>
+(function(){
+  if(window===window.top)return;
+  function inlineAll(orig,clone){
+    if(orig.nodeType!==1)return;
+    try{
+      var cs=getComputedStyle(orig);
+      var t='';
+      for(var i=0;i<cs.length;i++){t+=cs[i]+':'+cs.getPropertyValue(cs[i])+';';}
+      clone.style.cssText=t;
+    }catch(e){}
+    var oc=orig.children,cc=clone.children;
+    for(var j=0;j<oc.length&&j<cc.length;j++){inlineAll(oc[j],cc[j]);}
+  }
+  function stripExternal(clone){
+    var imgs=clone.querySelectorAll('img');
+    for(var i=0;i<imgs.length;i++){
+      var s=imgs[i].getAttribute('src');
+      if(s&&!s.startsWith('data:'))imgs[i].removeAttribute('src');
+    }
+    var all=clone.querySelectorAll('*');
+    for(var i=0;i<all.length;i++){
+      var st=all[i].style.cssText;
+      if(st&&st.indexOf('url(')>=0){
+        all[i].style.cssText=st.replace(/url\(["']?(?!data:)[^)"']*["']?\)/gi,'none');
+      }
+    }
+  }
+  var scrollRaf=0;
+  function emitScroll(){
+    scrollRaf=0;
+    var x=window.scrollX||window.pageXOffset||0;
+    var y=window.scrollY||window.pageYOffset||0;
+    window.parent.postMessage({type:'INLINE_EDIT_SCROLL',scrollX:x,scrollY:y},'*');
+  }
+  window.addEventListener('scroll',function(){
+    if(scrollRaf)return;
+    scrollRaf=requestAnimationFrame(emitScroll);
+  },{passive:true,capture:true});
+  emitScroll();
+  window.addEventListener('message',function(e){
+    if(!e.data||e.data.type!=='INLINE_EDIT_CAPTURE_REQUEST')return;
+    var scrollX=window.scrollX||window.pageXOffset||0;
+    var scrollY=window.scrollY||window.pageYOffset||0;
+    var w=window.innerWidth,h=window.innerHeight;
+    try{
+      var clone=document.documentElement.cloneNode(true);
+      var rm=clone.querySelectorAll('script,link[rel="stylesheet"],style');
+      for(var i=0;i<rm.length;i++){rm[i].remove();}
+      inlineAll(document.documentElement,clone);
+      stripExternal(clone);
+      var html=new XMLSerializer().serializeToString(clone);
+      var svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'">'
+        +'<foreignObject width="100%" height="100%">'
+        +'<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+w+'px;height:'+h+'px;overflow:hidden">'
+        +'<div style="transform:translate(-'+scrollX+'px,-'+scrollY+'px);transform-origin:top left">'
+        +html+'</div></div></foreignObject></svg>';
+      var svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+      var img=new Image();
+      img.onload=function(){
+        var c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0);
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:c.toDataURL('image/png'),scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.onerror=function(){
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.src=svgUrl;
+    }catch(err){
+      window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+    }
+  });
+})();
+</script></body>
+</html>
