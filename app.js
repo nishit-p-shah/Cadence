@@ -1348,17 +1348,29 @@ switchTab('journal');
 initAuth();
 
 /* ---------- Auth + remote sync wiring ---------- */
-function initAuth() {
+async function waitForSync(timeoutMs = 8000) {
+  const start = Date.now();
+  while (!window.cadenceSync) {
+    if (Date.now() - start > timeoutMs) return null;
+    await new Promise(r => setTimeout(r, 50));
+  }
+  return window.cadenceSync;
+}
+
+async function initAuth() {
   const authBtn = document.getElementById('authBtn');
   if (!authBtn) return;
-  const sync = window.cadenceSync;
+  authBtn.hidden = false;
+  authBtn.removeAttribute('hidden');
 
+  const sync = await waitForSync();
   if (!sync || !sync.available) {
-    // Firebase not configured: hide sign-in entirely, stay local-only
-    authBtn.hidden = true;
+    // Firebase not configured or failed to load: keep button visible but show a helpful message on click
+    authBtn.addEventListener('click', () => {
+      alert('Cloud sync is not available.\n\nCheck that firebase-config.js and sync.js are uploaded to your repo and that Firebase Authentication is enabled.');
+    });
     return;
   }
-  authBtn.hidden = false;
   setSyncState('signedout');
 
   authBtn.addEventListener('click', async () => {
