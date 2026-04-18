@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="A clean, private habit tracker. Build streaks, track progress, and stay consistent." />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="description" content="Cadence — a Habitify-style habit tracker with areas, time of day, moods, and progress insights." />
 <title>Cadence · Habit Tracker</title>
 <link rel="preconnect" href="https://api.fontshare.com" />
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&f[]=general-sans@500,600&display=swap" rel="stylesheet" />
@@ -14,7 +14,7 @@
 
 <header class="topbar">
   <div class="brand">
-    <svg class="logo" width="28" height="28" viewBox="0 0 32 32" aria-label="Cadence logo">
+    <svg class="logo" width="26" height="26" viewBox="0 0 32 32" aria-label="Cadence logo">
       <rect width="32" height="32" rx="8" fill="currentColor" />
       <path d="M9 17l4 4 10-10" stroke="var(--color-bg)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
@@ -23,107 +23,239 @@
       <span class="brand-sub" id="todayLabel">—</span>
     </div>
   </div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="journal" class="tab on">Journal</button>
+    <button role="tab" data-tab="progress" class="tab">Progress</button>
+    <button role="tab" data-tab="timer" class="tab">Timer</button>
+  </nav>
   <div class="topbar-actions">
+    <div id="syncBadge" class="sync-badge hidden" title="Sync status">
+      <span class="sync-dot"></span><span class="sync-label">Synced</span>
+    </div>
+    <button class="btn-ghost" id="authBtn" title="Sign in" aria-label="Sign in" hidden>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </button>
     <button class="btn-ghost" id="exportBtn" title="Export data" aria-label="Export data">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     </button>
     <button class="btn-ghost" data-theme-toggle aria-label="Toggle theme"></button>
-    <button class="btn-primary" id="newHabitBtn">
+    <button class="btn-primary" id="fabBtn">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      New habit
+      New
     </button>
   </div>
 </header>
 
+<!-- Date scroller (7 days) -->
+<section class="date-strip" id="dateStrip" aria-label="Date selector"></section>
+
 <main class="shell">
 
-  <!-- Stats summary -->
-  <section class="stats" aria-label="Summary stats">
-    <div class="stat-card">
-      <span class="stat-label">Today</span>
-      <div class="stat-value-row">
-        <span class="stat-value" id="statToday">0/0</span>
-        <span class="stat-sub" id="statTodayPct">—</span>
-      </div>
-      <div class="progress"><div class="progress-fill" id="progressToday" style="width:0%"></div></div>
-    </div>
-    <div class="stat-card">
-      <span class="stat-label">Active streaks</span>
-      <div class="stat-value-row">
-        <span class="stat-value" id="statStreaks">0</span>
-        <span class="stat-sub">habits on a roll</span>
-      </div>
-    </div>
-    <div class="stat-card">
-      <span class="stat-label">Longest streak</span>
-      <div class="stat-value-row">
-        <span class="stat-value" id="statLongest">0</span>
-        <span class="stat-sub">days</span>
-      </div>
-    </div>
-    <div class="stat-card">
-      <span class="stat-label">Last 30 days</span>
-      <div class="stat-value-row">
-        <span class="stat-value" id="stat30">0%</span>
-        <span class="stat-sub">completion</span>
-      </div>
-    </div>
-  </section>
+  <!-- ============ JOURNAL TAB ============ -->
+  <section class="tabpanel" data-panel="journal">
 
-  <!-- Today -->
-  <section class="panel">
-    <div class="panel-head">
-      <h2 class="panel-title">Today</h2>
-      <p class="panel-sub">Tap to mark done. Streaks update instantly.</p>
+    <!-- Area bar -->
+    <div class="areabar" id="areaBar" role="tablist" aria-label="Areas"></div>
+
+    <!-- Time of day bar -->
+    <div class="todbar" id="todBar" role="tablist" aria-label="Time of day">
+      <button role="tab" data-tod="all" class="tod-btn on">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></svg>
+        All day
+      </button>
+      <button role="tab" data-tod="morning" class="tod-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        Morning
+      </button>
+      <button role="tab" data-tod="afternoon" class="tod-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="5" fill="currentColor"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+        Afternoon
+      </button>
+      <button role="tab" data-tod="evening" class="tod-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        Evening
+      </button>
     </div>
+
+    <!-- Summary pill -->
+    <div class="day-summary" id="daySummary"></div>
+
+    <!-- Mood strip -->
+    <div class="mood-strip" id="moodStrip" aria-label="How are you feeling?">
+      <span class="mood-label">Mood</span>
+      <div class="mood-options">
+        <button class="mood" data-mood="1" title="Terrible">😣</button>
+        <button class="mood" data-mood="2" title="Bad">😕</button>
+        <button class="mood" data-mood="3" title="Okay">😐</button>
+        <button class="mood" data-mood="4" title="Good">🙂</button>
+        <button class="mood" data-mood="5" title="Excellent">😄</button>
+      </div>
+      <span class="mood-current" id="moodCurrent"></span>
+    </div>
+
+    <!-- Habit list -->
     <div id="habitList" class="habit-list" role="list"></div>
     <div id="emptyState" class="empty hidden">
       <div class="empty-art" aria-hidden="true">
-        <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="9"/>
-          <path d="M8 12.5l2.5 2.5L16 9.5"/>
-        </svg>
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
       </div>
-      <h3>Start with one habit</h3>
-      <p>Small, daily, repeatable. Click “New habit” above to add your first one.</p>
+      <h3 id="emptyTitle">Start with one habit</h3>
+      <p id="emptyBody">Small, daily, repeatable. Tap “New” to add your first habit.</p>
     </div>
+
   </section>
 
-  <!-- Weekly chart -->
-  <section class="panel">
-    <div class="panel-head">
-      <h2 class="panel-title">Last 7 days</h2>
-      <p class="panel-sub">Completion rate across all habits.</p>
+  <!-- ============ PROGRESS TAB ============ -->
+  <section class="tabpanel hidden" data-panel="progress">
+    <div class="range-bar">
+      <div class="range-tabs" role="tablist">
+        <button class="range-btn on" data-range="7">Week</button>
+        <button class="range-btn" data-range="30">Month</button>
+        <button class="range-btn" data-range="90">Quarter</button>
+        <button class="range-btn" data-range="365">Year</button>
+      </div>
     </div>
-    <div class="week-chart" id="weekChart" aria-label="Weekly completion chart"></div>
+
+    <div class="score-grid">
+      <div class="score-card">
+        <span class="score-label">Habit score</span>
+        <div class="score-row">
+          <span class="score-value" id="habitScore">0%</span>
+          <span class="score-sub" id="habitScoreSub">—</span>
+        </div>
+        <div class="mini-progress"><div class="mini-fill" id="habitScoreBar" style="width:0%"></div></div>
+      </div>
+      <div class="score-card">
+        <span class="score-label">Mood score</span>
+        <div class="score-row">
+          <span class="score-value" id="moodScore">—</span>
+          <span class="score-sub" id="moodScoreSub">from logs</span>
+        </div>
+        <div class="mini-progress"><div class="mini-fill mood" id="moodScoreBar" style="width:0%"></div></div>
+      </div>
+      <div class="score-card">
+        <span class="score-label">Active habits</span>
+        <div class="score-row">
+          <span class="score-value" id="activeCount">0</span>
+          <span class="score-sub"><span id="stalledCount">0</span> stalled</span>
+        </div>
+      </div>
+      <div class="score-card">
+        <span class="score-label">Best streak</span>
+        <div class="score-row">
+          <span class="score-value" id="bestStreak">0</span>
+          <span class="score-sub">days</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2 class="panel-title">Daily completion</h2>
+        <p class="panel-sub">Perfect, partial, and missed days.</p>
+      </div>
+      <div class="completion-chart" id="completionChart"></div>
+      <div class="completion-legend">
+        <span><i class="sw perfect"></i> Perfect <b id="daysPerfect">0</b></span>
+        <span><i class="sw partial"></i> Partial <b id="daysPartial">0</b></span>
+        <span><i class="sw missed"></i> Missed <b id="daysMissed">0</b></span>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">Performance by weekday</h2>
+          <p class="panel-sub">Your strongest and weakest days.</p>
+        </div>
+        <div class="weekday-chart" id="weekdayChart"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">Mood distribution</h2>
+          <p class="panel-sub">How you've felt in this range.</p>
+        </div>
+        <div class="mood-chart" id="moodChart"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2 class="panel-title">Consistency heatmap</h2>
+        <p class="panel-sub">Darker means more completions that day.</p>
+      </div>
+      <div class="heatmap-wrap">
+        <div class="heatmap" id="heatmap" aria-hidden="true"></div>
+        <div class="heatmap-legend">
+          <span>Less</span>
+          <span class="sq l0"></span>
+          <span class="sq l1"></span>
+          <span class="sq l2"></span>
+          <span class="sq l3"></span>
+          <span class="sq l4"></span>
+          <span>More</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2 class="panel-title">Per-habit performance</h2>
+        <p class="panel-sub">Completion rate and current streak for each habit.</p>
+      </div>
+      <div class="perhabit-list" id="perhabitList"></div>
+    </div>
+
   </section>
 
-  <!-- Heatmap -->
-  <section class="panel">
-    <div class="panel-head">
-      <h2 class="panel-title">Consistency · last 12 weeks</h2>
-      <p class="panel-sub">Each square is one day. Darker means more habits completed.</p>
-    </div>
-    <div class="heatmap-wrap">
-      <div class="heatmap" id="heatmap" aria-hidden="true"></div>
-      <div class="heatmap-legend">
-        <span>Less</span>
-        <span class="sq l0"></span>
-        <span class="sq l1"></span>
-        <span class="sq l2"></span>
-        <span class="sq l3"></span>
-        <span class="sq l4"></span>
-        <span>More</span>
+  <!-- ============ TIMER TAB ============ -->
+  <section class="tabpanel hidden" data-panel="timer">
+    <div class="timer-panel">
+      <div class="timer-top">
+        <label class="timer-habit">
+          <span class="field-label">Habit</span>
+          <select id="timerHabit"></select>
+        </label>
+        <div class="timer-modes" role="tablist">
+          <button class="mode-btn on" data-min="25">25 min</button>
+          <button class="mode-btn" data-min="15">15 min</button>
+          <button class="mode-btn" data-min="45">45 min</button>
+          <button class="mode-btn" data-min="5">5 min</button>
+        </div>
+      </div>
+
+      <div class="timer-display">
+        <svg class="timer-ring" viewBox="0 0 200 200" aria-hidden="true">
+          <circle cx="100" cy="100" r="88" class="ring-track"/>
+          <circle cx="100" cy="100" r="88" class="ring-fill" id="ringFill" pathLength="100" stroke-dasharray="100" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-text">
+          <div class="timer-time" id="timerTime">25:00</div>
+          <div class="timer-status" id="timerStatus">Ready</div>
+        </div>
+      </div>
+
+      <div class="timer-controls">
+        <button class="btn-ghost" id="timerReset">Reset</button>
+        <button class="btn-primary big" id="timerToggle">Start</button>
+        <button class="btn-ghost" id="timerLog" disabled>Log session</button>
+      </div>
+
+      <div class="timer-log">
+        <div class="panel-head">
+          <h3 class="panel-title">Today's focus sessions</h3>
+        </div>
+        <div id="sessionList" class="session-list"></div>
       </div>
     </div>
   </section>
 
 </main>
 
-<!-- New / edit habit modal -->
+<!-- ============ HABIT MODAL ============ -->
 <div class="modal hidden" id="habitModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal-backdrop" data-close></div>
-  <div class="modal-panel">
+  <div class="modal-panel wide">
     <div class="modal-head">
       <h3 id="modalTitle">New habit</h3>
       <button class="btn-ghost" data-close aria-label="Close">
@@ -131,14 +263,58 @@
       </button>
     </div>
     <form id="habitForm" class="modal-body">
+
+      <!-- Templates -->
+      <div class="field" id="templatesField">
+        <span class="field-label">Popular habits</span>
+        <div class="template-grid" id="templateGrid"></div>
+      </div>
+
       <label class="field">
         <span class="field-label">Name</span>
         <input type="text" id="habitName" required maxlength="60" placeholder="e.g. Strength training" />
       </label>
 
+      <div class="field-row">
+        <div class="field">
+          <span class="field-label">Icon</span>
+          <div class="icon-row" id="iconRow"></div>
+        </div>
+        <div class="field">
+          <span class="field-label">Color</span>
+          <div class="color-row" id="colorRow"></div>
+        </div>
+      </div>
+
       <div class="field">
-        <span class="field-label">Color</span>
-        <div class="color-row" id="colorRow"></div>
+        <span class="field-label">Type</span>
+        <div class="seg" role="tablist">
+          <button type="button" class="seg-btn on" data-goaltype="simple">Check-off</button>
+          <button type="button" class="seg-btn" data-goaltype="count">Numeric goal</button>
+        </div>
+      </div>
+
+      <div class="field hidden" id="countField">
+        <span class="field-label">Target per day</span>
+        <div class="count-row">
+          <input type="number" id="habitTarget" min="1" max="999" step="1" value="8" />
+          <input type="text" id="habitUnit" maxlength="16" placeholder="glasses" />
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="field-label">Area</span>
+        <div class="area-row" id="areaPicker"></div>
+      </div>
+
+      <div class="field">
+        <span class="field-label">Time of day</span>
+        <div class="seg" role="tablist" id="todPicker">
+          <button type="button" class="seg-btn on" data-tod="any">Any</button>
+          <button type="button" class="seg-btn" data-tod="morning">Morning</button>
+          <button type="button" class="seg-btn" data-tod="afternoon">Afternoon</button>
+          <button type="button" class="seg-btn" data-tod="evening">Evening</button>
+        </div>
       </div>
 
       <div class="field">
@@ -169,83 +345,148 @@
   </div>
 </div>
 
+<!-- ============ NEW MENU (FAB) ============ -->
+<div class="modal hidden" id="newMenu" role="dialog" aria-modal="true">
+  <div class="modal-backdrop" data-close></div>
+  <div class="menu-panel">
+    <button class="menu-item" data-new="habit">
+      <span class="menu-ic" style="background:var(--color-primary)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="5 12 10 17 19 7"/></svg>
+      </span>
+      <span class="menu-label"><b>New habit</b><span>Create a recurring habit</span></span>
+    </button>
+    <button class="menu-item" data-new="mood">
+      <span class="menu-ic" style="background:var(--hc-amber)">😊</span>
+      <span class="menu-label"><b>Log mood</b><span>Record how you feel right now</span></span>
+    </button>
+    <button class="menu-item" data-new="area">
+      <span class="menu-ic" style="background:var(--hc-indigo)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
+      </span>
+      <span class="menu-label"><b>New area</b><span>Group habits by life area</span></span>
+    </button>
+  </div>
+</div>
+
+<!-- ============ NOTE/STATUS SHEET ============ -->
+<div class="modal hidden" id="noteModal" role="dialog" aria-modal="true">
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel">
+    <div class="modal-head">
+      <h3 id="noteTitle">Log</h3>
+      <button class="btn-ghost" data-close aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="field" id="countLogField">
+        <span class="field-label">Progress</span>
+        <div class="counter">
+          <button class="btn-ghost circle" id="countMinus">−</button>
+          <div class="counter-val"><span id="countCurrent">0</span> <span class="counter-unit" id="countUnit">of 0</span></div>
+          <button class="btn-ghost circle" id="countPlus">+</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="field-label">Status</span>
+        <div class="status-row" id="statusRow">
+          <button class="status-btn" data-status="done">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="5 12 10 17 19 7"/></svg>
+            Done
+          </button>
+          <button class="status-btn" data-status="skip">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 4l14 8L5 20z"/></svg>
+            Skip
+          </button>
+          <button class="status-btn" data-status="fail">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Fail
+          </button>
+          <button class="status-btn" data-status="clear">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <label class="field">
+        <span class="field-label">Note</span>
+        <textarea id="noteText" rows="3" placeholder="Weight, reps, mood, reflection…"></textarea>
+      </label>
+
+      <div class="modal-foot">
+        <div class="spacer"></div>
+        <button type="button" class="btn-ghost" data-close>Cancel</button>
+        <button type="button" class="btn-primary" id="noteSave">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MOOD MODAL ============ -->
+<div class="modal hidden" id="moodModal" role="dialog" aria-modal="true">
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel">
+    <div class="modal-head">
+      <h3>How do you feel?</h3>
+      <button class="btn-ghost" data-close aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="mood-big" id="moodBig">
+        <button class="mood-b" data-mood="1"><span>😣</span><b>Terrible</b></button>
+        <button class="mood-b" data-mood="2"><span>😕</span><b>Bad</b></button>
+        <button class="mood-b" data-mood="3"><span>😐</span><b>Okay</b></button>
+        <button class="mood-b" data-mood="4"><span>🙂</span><b>Good</b></button>
+        <button class="mood-b" data-mood="5"><span>😄</span><b>Excellent</b></button>
+      </div>
+      <label class="field">
+        <span class="field-label">Note (optional)</span>
+        <textarea id="moodNote" rows="2" placeholder="What contributed to this mood?"></textarea>
+      </label>
+      <div class="modal-foot">
+        <div class="spacer"></div>
+        <button type="button" class="btn-ghost" data-close>Cancel</button>
+        <button type="button" class="btn-primary" id="moodSave" disabled>Save mood</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ AREA MODAL ============ -->
+<div class="modal hidden" id="areaModal" role="dialog" aria-modal="true">
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel">
+    <div class="modal-head">
+      <h3 id="areaModalTitle">New area</h3>
+      <button class="btn-ghost" data-close aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <form class="modal-body" id="areaForm">
+      <label class="field">
+        <span class="field-label">Name</span>
+        <input type="text" id="areaName" required maxlength="30" placeholder="e.g. Health, Work, Family" />
+      </label>
+      <div class="field">
+        <span class="field-label">Color</span>
+        <div class="color-row" id="areaColorRow"></div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost btn-danger hidden" id="areaDeleteBtn">Delete</button>
+        <div class="spacer"></div>
+        <button type="button" class="btn-ghost" data-close>Cancel</button>
+        <button type="submit" class="btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="app.js"></script>
-<script data-pplx-inline-edit>
-(function(){
-  if(window===window.top)return;
-  function inlineAll(orig,clone){
-    if(orig.nodeType!==1)return;
-    try{
-      var cs=getComputedStyle(orig);
-      var t='';
-      for(var i=0;i<cs.length;i++){t+=cs[i]+':'+cs.getPropertyValue(cs[i])+';';}
-      clone.style.cssText=t;
-    }catch(e){}
-    var oc=orig.children,cc=clone.children;
-    for(var j=0;j<oc.length&&j<cc.length;j++){inlineAll(oc[j],cc[j]);}
-  }
-  function stripExternal(clone){
-    var imgs=clone.querySelectorAll('img');
-    for(var i=0;i<imgs.length;i++){
-      var s=imgs[i].getAttribute('src');
-      if(s&&!s.startsWith('data:'))imgs[i].removeAttribute('src');
-    }
-    var all=clone.querySelectorAll('*');
-    for(var i=0;i<all.length;i++){
-      var st=all[i].style.cssText;
-      if(st&&st.indexOf('url(')>=0){
-        all[i].style.cssText=st.replace(/url\(["']?(?!data:)[^)"']*["']?\)/gi,'none');
-      }
-    }
-  }
-  var scrollRaf=0;
-  function emitScroll(){
-    scrollRaf=0;
-    var x=window.scrollX||window.pageXOffset||0;
-    var y=window.scrollY||window.pageYOffset||0;
-    window.parent.postMessage({type:'INLINE_EDIT_SCROLL',scrollX:x,scrollY:y},'*');
-  }
-  window.addEventListener('scroll',function(){
-    if(scrollRaf)return;
-    scrollRaf=requestAnimationFrame(emitScroll);
-  },{passive:true,capture:true});
-  emitScroll();
-  window.addEventListener('message',function(e){
-    if(!e.data||e.data.type!=='INLINE_EDIT_CAPTURE_REQUEST')return;
-    var scrollX=window.scrollX||window.pageXOffset||0;
-    var scrollY=window.scrollY||window.pageYOffset||0;
-    var w=window.innerWidth,h=window.innerHeight;
-    try{
-      var clone=document.documentElement.cloneNode(true);
-      var rm=clone.querySelectorAll('script,link[rel="stylesheet"],style');
-      for(var i=0;i<rm.length;i++){rm[i].remove();}
-      inlineAll(document.documentElement,clone);
-      stripExternal(clone);
-      var html=new XMLSerializer().serializeToString(clone);
-      var svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'">'
-        +'<foreignObject width="100%" height="100%">'
-        +'<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+w+'px;height:'+h+'px;overflow:hidden">'
-        +'<div style="transform:translate(-'+scrollX+'px,-'+scrollY+'px);transform-origin:top left">'
-        +html+'</div></div></foreignObject></svg>';
-      var svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
-      var img=new Image();
-      img.onload=function(){
-        var c=document.createElement('canvas');c.width=w;c.height=h;
-        c.getContext('2d').drawImage(img,0,0);
-        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:c.toDataURL('image/png'),scrollX:scrollX,scrollY:scrollY},'*');
-      };
-      img.onerror=function(){
-        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
-      };
-      img.src=svgUrl;
-    }catch(err){
-      window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
-    }
-  });
-})();
-  <script src="firebase-config.js"></script>
+<script src="firebase-config.js"></script>
 <script type="module" src="sync.js"></script>
 <script src="app.js"></script>
 </body>
