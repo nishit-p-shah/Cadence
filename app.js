@@ -515,7 +515,7 @@ function renderHabitRow(h, dateStr, isOff) {
           ? `<span class="icon-emoji">${h.icon || '✓'}</span>${h.goalType === 'count' ? '' : statusIcon.done.replace('<svg', '<svg class="statusmark"')}`
           : statusIcon[status] || '')}
     </button>
-    <div class="habit-info">
+    <div class="habit-info" data-edit="${h.id}" role="button" tabindex="0" aria-label="Edit ${escapeHtml(h.name)}">
       <span class="habit-name">${escapeHtml(h.name)}</span>
       <span class="habit-meta">
         ${areaTag}
@@ -1078,6 +1078,13 @@ function bindEvents() {
       openNoteSheet(menuEl.dataset.menu, ui.selectedDate);
       return;
     }
+    // Tap habit name/info → open edit modal
+    const editEl = e.target.closest('[data-edit]');
+    if (editEl) {
+      const h = habitById(editEl.dataset.edit);
+      if (h) openHabitModal(h);
+      return;
+    }
   });
 
   // Long-press on check → open note sheet
@@ -1174,6 +1181,12 @@ function bindEvents() {
   });
 
   /* ----- Note sheet ----- */
+  $('#noteEditHabit')?.addEventListener('click', () => {
+    if (!ui.noteFor) return;
+    const h = habitById(ui.noteFor.habitId);
+    closeModal('noteModal');
+    if (h) openHabitModal(h);
+  });
   $$('#statusRow .status-btn').forEach(b => b.addEventListener('click', () => {
     if (!ui.noteFor) return;
     const { habitId, date } = ui.noteFor;
